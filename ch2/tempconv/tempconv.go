@@ -17,11 +17,12 @@ const (
 	FreezingC     Celsius = 0
 	BoilingC      Celsius = 100
 	AbsoluteZeroK Kelvin = 0
-	FreezingK     Celsius = 273.15
-	BoilingK      Celsius = 373.15
+	FreezingK     Kelvin = 273.15
+	BoilingK	  Kelvin = 473.15
 )
 
 func (c Celsius) String() string    { return fmt.Sprintf("%g°C", c) }
 func (f Fahrenheit) String() string { return fmt.Sprintf("%g°F", f) }
+func (k Kelvin) String() string { return fmt.Sprintf("%g°K", k) }
 
 //!-

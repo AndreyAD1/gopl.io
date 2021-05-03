@@ -13,19 +13,37 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
 func main() {
 	start := time.Now()
 	ch := make(chan string)
-	for _, url := range os.Args[1:] {
+	error_message := "The script has two positional arguments: " +
+		"output file name and at least one URL"
+	if len(os.Args) < 3 {
+		fmt.Println(error_message)
+		return
+	}
+
+	for _, url := range os.Args[2:] {
+		fmt.Printf("start a goroutine for %s", url)
 		go fetch(url, ch) // start a goroutine
 	}
-	for range os.Args[1:] {
-		fmt.Println(<-ch) // receive from channel ch
+	var result []string
+	for range os.Args[2:] {
+		result = append(result, <-ch) // receive from channel ch
 	}
-	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
+	elapsed_time := fmt.Sprintf("%.2fs elapsed\n", time.Since(start).Seconds())
+	result = append(result, elapsed_time)
+	output_filename := os.Args[1]
+	result_string := strings.Join(result, "\n")
+	err := ioutil.WriteFile(output_filename, []byte(result_string), 0644)
+	if err != nil {
+		fmt.Printf("Can not write the result to the file %s", output_filename)
+		return
+	}
 }
 
 func fetch(url string, ch chan<- string) {
