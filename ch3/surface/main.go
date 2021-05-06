@@ -9,8 +9,10 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"math"
-	"os"
+	"net/http"
 )
 
 const (
@@ -25,29 +27,28 @@ const (
 var sin30, cos30 = math.Sin(angle), math.Cos(angle) // sin(30°), cos(30°)
 
 func main() {
-	outputFile, err := os.Create("output.svg")
-
-	if err != nil {
-		fmt.Println("Can not create the output file.", err)
-		os.Exit(1)
+	handler := func(
+		responseWriter http.ResponseWriter, 
+		request *http.Request) {
+		get_svg(responseWriter, request)
 	}
-	defer outputFile.Close()
+	http.HandleFunc("/", handler)
+	log.Fatal(http.ListenAndServe("localhost:8000", nil))
+}
 
+func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
+	responseWriter.Header().Set("Content-Type", "image/svg+xml")
 	firstLine := fmt.Sprintf(
 		"<svg xmlns='http://www.w3.org/2000/svg' "+
 		"style='stroke: grey; fill: white; stroke-width: 0.7' "+
 		"width='%d' height='%d'>", width, height)
-	_, err = outputFile.WriteString(firstLine)
+	_, err := io.WriteString(responseWriter, firstLine)
 	
 	if err != nil {
-		fmt.Println("Can not write to file.", err)
-		outputFile.Close()
-		os.Exit(1)
+		fmt.Println("Can not write to response.", err)
+		return
 	}
 
-	// fmt.Printf("<svg xmlns='http://www.w3.org/2000/svg' "+
-	// 	"style='stroke: grey; fill: white; stroke-width: 0.7' "+
-	// 	"width='%d' height='%d'>", width, height)
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
 			ax, ay, az := corner(i+1, j)
@@ -65,7 +66,7 @@ func main() {
 			polygonString := fmt.Sprintf(
 				"<polygon fill=%q points='%g,%g %g,%g %g,%g %g,%g'/>\n",
 				polygon_color, ax, ay, bx, by, cx, cy, dx, dy)
-			_, err = outputFile.WriteString(polygonString)
+			_, err = io.WriteString(responseWriter, polygonString)
 			
 			if err != nil {
 				fmt.Printf(
@@ -75,7 +76,7 @@ func main() {
 			}
 		}
 	}
-	_, err = outputFile.WriteString("</svg>")
+	_, err = io.WriteString(responseWriter, "</svg>")
 	if err != nil {
 		fmt.Println("Can not write to the file.", err)
 	}
