@@ -50,13 +50,21 @@ func main() {
 	// 	"width='%d' height='%d'>", width, height)
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
-			ax, ay := corner(i+1, j)
-			bx, by := corner(i, j)
-			cx, cy := corner(i, j+1)
-			dx, dy := corner(i+1, j+1)
+			ax, ay, az := corner(i+1, j)
+			bx, by, bz := corner(i, j)
+			cx, cy, cz := corner(i, j+1)
+			dx, dy, dz := corner(i+1, j+1)
+			z_coords := [...]float64{az, bz, cz, dz}
+			polygon_color := "#0000ff"
+			for _, z := range z_coords {
+				if z > 0 {
+					polygon_color = "#ff0000"
+					break
+				}
+			}
 			polygonString := fmt.Sprintf(
-				"<polygon points='%g,%g %g,%g %g,%g %g,%g'/>\n",
-				ax, ay, bx, by, cx, cy, dx, dy)
+				"<polygon fill=%q points='%g,%g %g,%g %g,%g %g,%g'/>\n",
+				polygon_color, ax, ay, bx, by, cx, cy, dx, dy)
 			_, err = outputFile.WriteString(polygonString)
 			
 			if err != nil {
@@ -73,7 +81,7 @@ func main() {
 	}
 }
 
-func corner(i, j int) (float64, float64) {
+func corner(i, j int) (float64, float64, float64) {
 	// Find point (x,y) at corner of cell (i,j).
 	x := xyrange * (float64(i)/cells - 0.5)
 	y := xyrange * (float64(j)/cells - 0.5)
@@ -84,7 +92,7 @@ func corner(i, j int) (float64, float64) {
 	// Project (x,y,z) isometrically onto 2-D SVG canvas (sx,sy).
 	sx := width/2 + (x-y)*cos30*xyscale
 	sy := height/2 + (x+y)*sin30*xyscale - z*zscale
-	return sx, sy
+	return sx, sy, z
 }
 
 func f(x, y float64) float64 {
