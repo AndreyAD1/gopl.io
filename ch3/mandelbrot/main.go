@@ -8,35 +8,104 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"image/png"
+	"io"
+	"log"
 	"math/cmplx"
-	"os"
+	"net/http"
+	"strconv"
 )
 
 func main() {
-	const (
-		xmin, ymin, xmax, ymax = -2, -2, +2, +2
-		width, height          = 1024, 1024
-	)
+	http.HandleFunc("/", getImage)
+	log.Fatal(http.ListenAndServe(":8000", nil))
+}
 
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
+func getImage(responseWriter http.ResponseWriter, request *http.Request) {
+	var height, width int
+	var xmax, xmin, ymax, ymin float64
+	
+	url := request.URL
+	urlArgs := url.Query()
+	parsedWidth, err := strconv.ParseInt(urlArgs.Get("width"), 0, 0)
+	if err != nil {
+		width = 1024
+	} else {
+		width = int(parsedWidth)
+	}
+
+	parsedHeight, err := strconv.ParseInt(urlArgs.Get("height"), 0, 0)
+	if err != nil {
+		height = 1024
+	} else {
+		height = int(parsedHeight)
+	}
+
+	if width <=0 || height <= 0 {
+		responseWriter.WriteHeader(400)
+		_, _ = io.WriteString(
+			responseWriter, 
+			"Bad request." + 
+			"The width and height should be positive")
+		return
+	}
+
+	xmin, err = strconv.ParseFloat(urlArgs.Get("xmin"), 64)
+	if err != nil {
+		xmin = -2
+	}
+
+	xmax, err = strconv.ParseFloat(urlArgs.Get("xmax"), 64)
+	if err != nil {
+		xmax = +2
+	}
+
+	ymin, err = strconv.ParseFloat(urlArgs.Get("ymin"), 64)
+	if err != nil {
+		ymin = -2
+	}
+
+	ymax, err = strconv.ParseFloat(urlArgs.Get("ymax"), 64)
+	if err != nil {
+		ymax = +2
+	}
+
+	if xmin >= xmax || ymin >= ymax {
+		responseWriter.WriteHeader(400)
+		_, _ = io.WriteString(
+			responseWriter, 
+			"Bad request." + 
+			"xmin and ymin should be less than xmax and ymax respectively")
+		return
+	}
+
+	img := image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
 	for py := 0; py < height; py++ {
-		y := float64(py)/height*(ymax-ymin) + ymin
 		for px := 0; px < width; px++ {
-			x := float64(px)/width*(xmax-xmin) + xmin
-			z := complex(x, y)
-			// Image point (px, py) represents complex value z.
-			img.Set(px, py, mandelbrot(z))
+			x1 := (float64(px) - 0.25)/float64(width)*(xmax-xmin) + xmin
+			x2 := (float64(px) + 0.25)/float64(width)*(xmax-xmin) + xmin
+			y1 := (float64(py) - 0.25)/float64(height)*(ymax-ymin) + ymin
+			y2 := (float64(py) + 0.25)/float64(height)*(ymax-ymin) + ymin
+			z1 := complex(x1, y1)
+			z2 := complex(x2, y1)
+			z3 := complex(x1, y2)
+			z4 := complex(x2, y2)
+			r1, g1, b1, a1 := newton(z1).RGBA()
+			r2, g2, b2, a2  := newton(z2).RGBA()
+			r3, g3, b3, a3  := newton(z3).RGBA()
+			r4, g4, b4, a4  := newton(z4).RGBA()
+			smoothedColor := color.RGBA{
+				uint8((r1 + r2 + r3 + r4) / 4),
+				uint8((g1 + g2 + g3 + g4) / 4),
+				uint8((b1 + b2 + b3 + b4) / 4),
+				uint8((a1 + a2 + a3 + a4) / 4),
+			}
+			img.Set(px, py, smoothedColor)
 		}
 	}
-	file, err := os.Create("mandelbrot.png")
-	if err != nil {
-		fmt.Println("Can not create an image file")
-	}
-	png.Encode(file, img) // NOTE: ignoring errors
+	png.Encode(responseWriter, img) // NOTE: ignoring errors
 }
 
 func mandelbrot(z complex128) color.Color {
