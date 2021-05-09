@@ -34,7 +34,19 @@ func comma(s string) string {
 	if n <= 3 {
 		return s
 	}
-	return comma(s[:n-3]) + "," + s[n-3:]
+
+	s1 := s[len(s)-3:]
+	fmt.Println("initial string", s1)
+	for index := 3; len(s) - index >= 1; {
+		if len(s) - index < 3 {
+			s1 = s[:len(s) - index] + "," + s1
+			break
+		}
+		s1 = s[len(s) - index - 3:len(s) - index] + "," + s1
+		fmt.Printf("string per index %d: %s\n", index, s1)
+		index += 3
+	}
+	return s1
 }
 
 //!-
