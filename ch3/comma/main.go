@@ -17,8 +17,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"unicode"
 )
 
 func main() {
@@ -30,23 +32,28 @@ func main() {
 //!+
 // comma inserts commas in a non-negative decimal integer string.
 func comma(s string) string {
+	for _, rune := range s {
+		if !unicode.IsDigit(rune) {
+			return "Error. String should contain decimal digits only."
+		}
+	}
+
 	n := len(s)
 	if n <= 3 {
 		return s
 	}
 
-	s1 := s[len(s)-3:]
-	fmt.Println("initial string", s1)
-	for index := 3; len(s) - index >= 1; {
-		if len(s) - index < 3 {
-			s1 = s[:len(s) - index] + "," + s1
-			break
-		}
-		s1 = s[len(s) - index - 3:len(s) - index] + "," + s1
-		fmt.Printf("string per index %d: %s\n", index, s1)
+	firstSeparatorIndex := len(s) % 3
+	if firstSeparatorIndex == 0 {
+		firstSeparatorIndex = 3
+	}
+	buffer := bytes.NewBufferString(s[:firstSeparatorIndex])
+	for index := firstSeparatorIndex; len(s) - index > 1; {
+		buffer.WriteString(",")
+		buffer.WriteString(s[index:index + 3])
 		index += 3
 	}
-	return s1
+	return buffer.String()
 }
 
 //!-
