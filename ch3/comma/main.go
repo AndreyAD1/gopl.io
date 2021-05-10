@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"unicode"
+	"strings"
 )
 
 func main() {
@@ -32,39 +32,41 @@ func main() {
 //!+
 // comma inserts commas in a non-negative decimal integer string.
 func comma(s string) string {
-	integerPart := s
-	fractionalPart := ""
-	for runeIndex, rune := range s {
-		if !unicode.IsDigit(rune) {
-			if runeIndex == 0 && rune != '-' {
-				return "Error. String should contain a decimal number."
-			}
-			if runeIndex != 0 && rune != '.' {
-				return "Error. String should contain a decimal number."
-			}
-			if rune == '.' {
-				integerPart = s[:runeIndex]
-				fractionalPart = s[runeIndex:]
-				break
-			}
+	var buffer bytes.Buffer
+
+	if strings.HasPrefix(s, "-") {
+		if strings.Count(s, "-") != 1 {
+			return "Error. String should not contain a minus in a middle."
 		}
+		buffer.WriteRune('-')
+		s = s[1:]
 	}
 
-	if len(integerPart) <= 3 {
-		return s
+	splittedString := strings.Split(s, ".")
+	if len(splittedString) > 2 {
+		return "Error. String should contain only one point."
+	}
+
+	integerPart := splittedString[0]
+	fractionalPart := ""
+	if len(splittedString) == 2 {
+		fractionalPart = splittedString[1]
 	}
 
 	firstSeparatorIndex := len(integerPart) % 3
 	if firstSeparatorIndex == 0 {
 		firstSeparatorIndex = 3
 	}
-	buffer := bytes.NewBufferString(integerPart[:firstSeparatorIndex])
+	buffer.WriteString(integerPart[:firstSeparatorIndex])
 	for index := firstSeparatorIndex; len(integerPart) - index > 1; {
 		buffer.WriteString(",")
 		buffer.WriteString(integerPart[index:index + 3])
 		index += 3
 	}
-	buffer.WriteString(fractionalPart)
+	if len(fractionalPart) > 0 {
+		buffer.WriteString(".")
+		buffer.WriteString(fractionalPart)
+	}
 	return buffer.String()
 }
 
