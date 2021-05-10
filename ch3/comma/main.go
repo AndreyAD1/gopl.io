@@ -32,27 +32,39 @@ func main() {
 //!+
 // comma inserts commas in a non-negative decimal integer string.
 func comma(s string) string {
-	for _, rune := range s {
+	integerPart := s
+	fractionalPart := ""
+	for runeIndex, rune := range s {
 		if !unicode.IsDigit(rune) {
-			return "Error. String should contain decimal digits only."
+			if runeIndex == 0 && rune != '-' {
+				return "Error. String should contain a decimal number."
+			}
+			if runeIndex != 0 && rune != '.' {
+				return "Error. String should contain a decimal number."
+			}
+			if rune == '.' {
+				integerPart = s[:runeIndex]
+				fractionalPart = s[runeIndex:]
+				break
+			}
 		}
 	}
 
-	n := len(s)
-	if n <= 3 {
+	if len(integerPart) <= 3 {
 		return s
 	}
 
-	firstSeparatorIndex := len(s) % 3
+	firstSeparatorIndex := len(integerPart) % 3
 	if firstSeparatorIndex == 0 {
 		firstSeparatorIndex = 3
 	}
-	buffer := bytes.NewBufferString(s[:firstSeparatorIndex])
-	for index := firstSeparatorIndex; len(s) - index > 1; {
+	buffer := bytes.NewBufferString(integerPart[:firstSeparatorIndex])
+	for index := firstSeparatorIndex; len(integerPart) - index > 1; {
 		buffer.WriteString(",")
-		buffer.WriteString(s[index:index + 3])
+		buffer.WriteString(integerPart[index:index + 3])
 		index += 3
 	}
+	buffer.WriteString(fractionalPart)
 	return buffer.String()
 }
 
