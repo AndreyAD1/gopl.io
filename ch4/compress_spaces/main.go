@@ -28,8 +28,8 @@ func compressSpaces(slice []byte) []byte {
 }
 
 func main() {
-	testString := "Go is a   programming\t\tlanguage\n\n"
-	// testString := "Test  test"
+	// testString := "Go is a   programming\t\tlanguage\n\n"
+	testString := "Test\t\ttest"
 	testSlice := []byte(testString)
 	compressedSlice := compressSpaces(testSlice)
 	fmt.Println(string(compressedSlice))
