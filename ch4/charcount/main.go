@@ -10,7 +10,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"unicode"
 	"unicode/utf8"
@@ -20,23 +19,26 @@ func main() {
 	counts := make(map[rune]int)    // counts of Unicode characters
 	var utflen [utf8.UTFMax + 1]int // count of lengths of UTF-8 encodings
 	invalid := 0                    // count of invalid UTF-8 characters
-
-	in := bufio.NewReader(os.Stdin)
+	stdinScanner := bufio.NewScanner(os.Stdin)
 	for {
-		r, n, err := in.ReadRune() // returns rune, nbytes, error
-		if err == io.EOF {
+		stdinScanner.Scan()
+		inputText := stdinScanner.Text()
+		if len(inputText) == 0 {
 			break
 		}
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "charcount: %v\n", err)
-			os.Exit(1)
+		for i := 0; i < len(inputText); {
+			run, byte_number := utf8.DecodeRuneInString(inputText[i:])
+			if run == utf8.RuneError {
+				break
+			}
+			if run == unicode.ReplacementChar && byte_number == 1 {
+				invalid++
+				continue
+			}
+			counts[run]++
+			utflen[byte_number]++
+			i += byte_number
 		}
-		if r == unicode.ReplacementChar && n == 1 {
-			invalid++
-			continue
-		}
-		counts[r]++
-		utflen[n]++
 	}
 	fmt.Printf("rune\tcount\n")
 	for c, n := range counts {
