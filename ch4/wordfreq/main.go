@@ -24,7 +24,7 @@ func main() {
 	fileScanner := bufio.NewScanner(fileReader)
 	fileScanner.Split(bufio.ScanWords)
 	var maxWordLength int
-	wordInfo := make(map[string][2]int)
+	wordInfo := make(map[string]int)
 	for fileScanner.Scan() {
 		word := fileScanner.Text()
 		lowerWord := strings.ToLower(word)
@@ -32,16 +32,14 @@ func main() {
 		if wordLenght > maxWordLength {
 			maxWordLength = wordLenght
 		}
-		wordNumber := wordInfo[lowerWord][0]
-		wordInfo[lowerWord] = [2]int{wordNumber + 1, wordLenght}
+		wordInfo[lowerWord]++
 	}
 	if fileScanner.Err() != nil {
 		fmt.Println("Error occured while scanner was reading the file")
 		return
 	}
-	for word, wordInfo := range wordInfo {
-		wordNumber, wordLength := wordInfo[0], wordInfo[1]
-		additionalRuneNumber := maxWordLength - wordLength
+	for word, wordNumber := range wordInfo {
+		additionalRuneNumber := maxWordLength - utf8.RuneCountInString(word)
 		for r := 0; r < additionalRuneNumber; r++ {
 			word += " "
 		}
