@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"gopl.io/ch4/github"
 )
@@ -21,11 +22,38 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	now := time.Now()
+	monthAgo := now.AddDate(0, -1, 0)
+	yearAgo := now.AddDate(-1, 0, 0)
+	var monthAgoIssues []*github.Issue
+	var yearAgoIssues []*github.Issue
 	fmt.Printf("%d issues:\n", result.TotalCount)
+	fmt.Println("Issues created this month:")
 	for _, item := range result.Items {
-		fmt.Printf("#%-5d %9.9s %.55s\n",
-			item.Number, item.User.Login, item.Title)
+		if item.CreatedAt.Before(monthAgo) && item.CreatedAt.After(yearAgo) {
+			monthAgoIssues = append(monthAgoIssues, item)
+			continue
+		}
+		if item.CreatedAt.Before(yearAgo) {
+			yearAgoIssues = append(yearAgoIssues, item)
+			continue
+		}
+		fmt.Printf("#%-5d %9.9s %.55s %v\n",
+			item.Number, item.User.Login, item.Title, item.CreatedAt)
 	}
+	fmt.Println("-----------")
+	fmt.Println("Issues created earlier than month ago:")
+	for _, item := range monthAgoIssues {
+		fmt.Printf("#%-5d %9.9s %.55s %v\n",
+			item.Number, item.User.Login, item.Title, item.CreatedAt)
+	}
+	fmt.Println("-----------")
+	fmt.Println("Issues created earlier than year ago:")
+	for _, item := range yearAgoIssues {
+		fmt.Printf("#%-5d %9.9s %.55s %v\n",
+			item.Number, item.User.Login, item.Title, item.CreatedAt)
+	}
+
 }
 
 //!-
