@@ -27,6 +27,9 @@ func main() {
 	//}
 	links := visit(nil, doc)
 	fmt.Println(links)
+
+	text := getTextContent(nil, doc)
+	fmt.Println("text", text)
 }
 
 //!-main
@@ -45,6 +48,22 @@ func visit(links []string, n *html.Node) []string {
 		links = visit(links, c)
 	}
 	return links
+}
+
+
+func getTextContent(text []string, n *html.Node) []string {
+	if n.Type == html.TextNode {
+		if len(n.Data) > 0 {
+			text = append(text, n.Data)
+		}
+	}
+	hiddenNodes := map[string]bool{"script": true, "style": true}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if hiddenNodes[n.Data] != true {
+			text = getTextContent(text, c)
+		}
+	}
+	return text
 }
 
 //!-visit
