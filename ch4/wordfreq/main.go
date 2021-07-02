@@ -4,11 +4,37 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 	"unicode/utf8"
 )
+
+func getWordNumber(reader io.Reader) (map[string]int, int, error) {
+	fileScanner := bufio.NewScanner(reader)
+	fileScanner.Split(bufio.ScanWords)
+	var maxWordLength int
+	wordInfo := make(map[string]int)
+	for fileScanner.Scan() {
+		word := fileScanner.Text()
+		lowerWord := strings.ToLower(word)
+		wordLength := utf8.RuneCountInString(lowerWord)
+		if wordLength > maxWordLength {
+			maxWordLength = wordLength
+		}
+		wordInfo[lowerWord]++
+	}
+	if fileScanner.Err() != nil {
+		fmt.Println("Error occured while scanner was reading the file")
+		err := fmt.Errorf(
+			"Error occured while scanner was reading the file: %v",
+			fileScanner.Err(),
+		)
+		return nil, 0, err
+	}
+	return wordInfo, maxWordLength, nil
+}
 
 func main() {
 	if len(os.Args) != 2 {
@@ -21,21 +47,9 @@ func main() {
 		return
 	}
 	fileReader := bytes.NewReader(fileBytes)
-	fileScanner := bufio.NewScanner(fileReader)
-	fileScanner.Split(bufio.ScanWords)
-	var maxWordLength int
-	wordInfo := make(map[string]int)
-	for fileScanner.Scan() {
-		word := fileScanner.Text()
-		lowerWord := strings.ToLower(word)
-		wordLenght := utf8.RuneCountInString(lowerWord)
-		if wordLenght > maxWordLength {
-			maxWordLength = wordLenght
-		}
-		wordInfo[lowerWord]++
-	}
-	if fileScanner.Err() != nil {
-		fmt.Println("Error occured while scanner was reading the file")
+	wordInfo, maxWordLength, err := getWordNumber(fileReader)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	for word, wordNumber := range wordInfo {
