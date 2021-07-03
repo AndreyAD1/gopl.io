@@ -82,18 +82,18 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func corner(i, j int) (float64, float64, float64) {
+func corner(i, j int) (projectedX, projectedY, surfaceHeight float64) {
 	// Find point (x,y) at corner of cell (i,j).
 	x := xyrange * (float64(i)/cells - 0.5)
 	y := xyrange * (float64(j)/cells - 0.5)
 
 	// Compute surface height z.
-	z := f(x, y)
+	surfaceHeight = f(x, y)
 
 	// Project (x,y,z) isometrically onto 2-D SVG canvas (sx,sy).
-	sx := width/2 + (x-y)*cos30*xyscale
-	sy := height/2 + (x+y)*sin30*xyscale - z*zscale
-	return sx, sy, z
+	projectedX = width/2 + (x-y)*cos30*xyscale
+	projectedY = height/2 + (x+y)*sin30*xyscale - surfaceHeight*zscale
+	return
 }
 
 func f(x, y float64) float64 {
