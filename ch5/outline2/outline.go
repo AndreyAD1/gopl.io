@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"regexp"
 
 	"golang.org/x/net/html"
 )
@@ -77,7 +78,9 @@ func startElement(n *html.Node) {
 		}
 	}
 	if n.Type == html.TextNode {
-		fmt.Printf("%*s%s\n", depth*2, "", n.Data)
+		if !regexp.MustCompile(`^[\s]+`).MatchString(n.Data) {
+			fmt.Printf("%*s%s\n", depth*2, "", n.Data)
+		}
 	}
 }
 
