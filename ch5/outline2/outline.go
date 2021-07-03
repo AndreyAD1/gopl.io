@@ -76,6 +76,9 @@ func startElement(n *html.Node) {
 			fmt.Printf("%*s<%s%s/>\n", depth*2, "", n.Data, attributeString)
 		}
 	}
+	if n.Type == html.TextNode {
+		fmt.Printf("%*s%s\n", depth*2, "", n.Data)
+	}
 }
 
 func endElement(n *html.Node) {
