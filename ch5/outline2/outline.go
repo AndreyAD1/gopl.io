@@ -78,7 +78,7 @@ func startElement(n *html.Node) {
 		}
 	}
 	if n.Type == html.TextNode {
-		if !regexp.MustCompile(`^[\s]+`).MatchString(n.Data) {
+		if !regexp.MustCompile(`^[\s]+$`).MatchString(n.Data) {
 			fmt.Printf("%*s%s\n", depth*2, "", n.Data)
 		}
 	}
