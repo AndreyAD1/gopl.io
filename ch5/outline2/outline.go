@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -17,18 +18,21 @@ import (
 
 func main() {
 	for _, url := range os.Args[1:] {
-		outline(url)
+		resp, err := http.Get(url)	
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		err = outline(resp.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
+		resp.Body.Close()
 	}
 }
 
-func outline(url string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	doc, err := html.Parse(resp.Body)
+func outline(responseBody io.Reader) error {
+	doc, err := html.Parse(responseBody)
 	if err != nil {
 		return err
 	}
