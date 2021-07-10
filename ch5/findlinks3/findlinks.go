@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 
 	"gopl.io/ch5/links"
@@ -35,11 +36,40 @@ func breadthFirst(f func(item string) []string, worklist []string) {
 //!-breadthFirst
 
 //!+crawl
-func crawl(url string) []string {
-	fmt.Println(url)
-	list, err := links.Extract(url)
+func crawl(downloadURL string) []string {
+	fmt.Println(downloadURL)
+	list, err := links.Extract(downloadURL)
 	if err != nil {
 		log.Print(err)
+	}
+	for _, link := range list {
+		parsedURL, err := url.Parse(link)
+		if err != nil {
+			fmt.Printf("Invalid link: %s\n", link)
+			continue
+		}
+		dirPath := parsedURL.Host
+		if len(parsedURL.Path) > 1 {
+			dirPath += parsedURL.Path
+		}
+		filePath := dirPath + ".html"
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			err = os.MkdirAll(dirPath, 0755)
+			if err != nil {
+				fmt.Printf("Can not create the directory: %s\n", dirPath)
+				continue
+			}
+			file, err := os.Create(filePath)
+			if err != nil {
+				fmt.Printf("Can not create the file: %s\n", filePath)
+				continue
+			}
+			defer file.Close()
+			_, err = file.WriteString("TEST TEST TEST")
+			if err != nil {
+				fmt.Printf("Can not write to the file: %s\n", filePath)
+			}
+		}
 	}
 	return list
 }
