@@ -16,6 +16,7 @@ import (
 var prereqs = map[string][]string{
 	"algorithms": {"data structures"},
 	"calculus":   {"linear algebra"},
+	"linear algebra": {"calculus"},
 
 	"compilers": {
 		"data structures",
@@ -74,9 +75,9 @@ func topoSort(m map[string][]string) []string {
 func topoSortWithMap(m map[string][]string) []string {
 	var order []string
 	seen := make(map[string]bool)
-	var visitAll func(items map[string][]string)
+	var visitAll func(items map[string][]string, offsprings []string)
 
-	visitAll = func(items map[string][]string) {
+	visitAll = func(items map[string][]string, offsprings []string) {
 		for item, _ := range items {
 			if !seen[item] {
 				seen[item] = true
@@ -84,13 +85,19 @@ func topoSortWithMap(m map[string][]string) []string {
 				for _, i := range m[item] {
 					nextMap[i] = []string{}
 				}
-				visitAll(nextMap)
+				visitAll(nextMap, append(offsprings, item))
 				order = append(order, item)
+			} else {
+				for _, offspring := range offsprings {
+					if item == offspring {
+						fmt.Printf("A cycle dependency found for %s\n", item)
+					}
+				}
 			}
 		}
 	}
-
-	visitAll(m)
+	var offsprings []string
+	visitAll(m, offsprings)
 	return order
 }
 
