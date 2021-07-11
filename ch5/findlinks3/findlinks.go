@@ -7,8 +7,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 
@@ -48,7 +50,7 @@ func crawl(downloadURL string) []string {
 			fmt.Printf("Invalid link: %s\n", link)
 			continue
 		}
-		dirPath := parsedURL.Host
+		dirPath := "downloaded_pages/" + parsedURL.Host
 		if len(parsedURL.Path) > 1 {
 			dirPath += parsedURL.Path
 		}
@@ -65,9 +67,22 @@ func crawl(downloadURL string) []string {
 				continue
 			}
 			defer file.Close()
-			_, err = file.WriteString("TEST TEST TEST")
+			response, err := http.Get(link)
 			if err != nil {
-				fmt.Printf("Can not write to the file: %s\n", filePath)
+				fmt.Printf("Can not download the URL %s: %s\n", link, err)
+			}
+			defer response.Body.Close()
+			if response.StatusCode != http.StatusOK {
+				fmt.Printf("Receve an HTTP error %s: %s", link, response.Status)
+				continue
+			}
+			scanner := bufio.NewScanner((response.Body))
+			for scanner.Scan() {
+				_, err := file.Write(scanner.Bytes())
+				if err != nil {
+					fmt.Printf("Can not write to the file %s", filePath)
+					break
+				}
 			}
 		}
 	}
