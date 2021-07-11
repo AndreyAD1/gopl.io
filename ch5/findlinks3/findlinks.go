@@ -50,44 +50,63 @@ func crawl(downloadURL string) []string {
 			fmt.Printf("Invalid link: %s\n", link)
 			continue
 		}
-		dirPath := "downloaded_pages/" + parsedURL.Host
-		if len(parsedURL.Path) > 1 {
-			dirPath += parsedURL.Path
+		response, err := http.Get(link)
+		if err != nil {
+			fmt.Printf("Can not download the URL %s: %s\n", link, err)
+			continue
 		}
-		filePath := dirPath + ".html"
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			err = os.MkdirAll(dirPath, 0755)
+		defer response.Body.Close()
+		if response.StatusCode != http.StatusOK {
+			fmt.Printf("Receve an HTTP error %s: %s\n", link, response.Status)
+			continue
+		}
+		file, err := getFile(parsedURL)
+		if err != nil {
+			fmt.Println(err)
+			file.Close()
+			continue
+		}
+		defer file.Close()
+		scanner := bufio.NewScanner(response.Body)
+		for scanner.Scan() {
+			_, err := file.Write(scanner.Bytes())
 			if err != nil {
-				fmt.Printf("Can not create the directory: %s\n", dirPath)
-				continue
-			}
-			file, err := os.Create(filePath)
-			if err != nil {
-				fmt.Printf("Can not create the file: %s\n", filePath)
-				continue
-			}
-			defer file.Close()
-			response, err := http.Get(link)
-			if err != nil {
-				fmt.Printf("Can not download the URL %s: %s\n", link, err)
-			}
-			defer response.Body.Close()
-			if response.StatusCode != http.StatusOK {
-				fmt.Printf("Receve an HTTP error %s: %s", link, response.Status)
-				continue
-			}
-			scanner := bufio.NewScanner((response.Body))
-			for scanner.Scan() {
-				_, err := file.Write(scanner.Bytes())
-				if err != nil {
-					fmt.Printf("Can not write to the file %s", filePath)
-					break
-				}
+				fmt.Printf("Can not write to the file %s: %s\n", file.Name(), err)
+				break
 			}
 		}
 	}
 	return list
 }
+
+func getFile(parsedURL *url.URL) (*os.File, error) {
+	dirPath := "downloaded_pages/" + parsedURL.Host
+	if len(parsedURL.Path) > 1 {
+		dirPath += parsedURL.Path
+	}
+	filePath := dirPath + ".html"
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		fmt.Printf("Create the new file %s\n", filePath)
+		err = os.MkdirAll(dirPath, 0755)
+		if err != nil {
+			return nil, fmt.Errorf("can not create the directory: %s", dirPath)
+		}
+		file, err := os.Create(filePath)
+		if err != nil {
+			err := fmt.Errorf("can not create the file: %s", filePath)
+			return nil, err
+		}
+		return file, err
+	}
+
+	file, err := os.OpenFile(filePath, os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		err = fmt.Errorf("can not open the file: %s", filePath)
+		return nil, err
+	}
+	return file, err
+}
+
 
 //!-crawl
 
