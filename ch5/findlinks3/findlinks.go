@@ -9,6 +9,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -45,29 +46,23 @@ func crawl(downloadURL string) []string {
 		log.Print(err)
 	}
 	for _, link := range list {
+		responseBody, err := getPage(link)
+		if err != nil {
+			fmt.Printf("Can not download the page: %s\n", link)
+		}
+		defer responseBody.Close()
 		parsedURL, err := url.Parse(link)
 		if err != nil {
 			fmt.Printf("Invalid link: %s\n", link)
 			continue
 		}
-		response, err := http.Get(link)
-		if err != nil {
-			fmt.Printf("Can not download the URL %s: %s\n", link, err)
-			continue
-		}
-		defer response.Body.Close()
-		if response.StatusCode != http.StatusOK {
-			fmt.Printf("Receve an HTTP error %s: %s\n", link, response.Status)
-			continue
-		}
 		file, err := getFile(parsedURL)
 		if err != nil {
 			fmt.Println(err)
-			file.Close()
 			continue
 		}
 		defer file.Close()
-		scanner := bufio.NewScanner(response.Body)
+		scanner := bufio.NewScanner(responseBody)
 		for scanner.Scan() {
 			_, err := file.Write(scanner.Bytes())
 			if err != nil {
@@ -79,6 +74,19 @@ func crawl(downloadURL string) []string {
 	return list
 }
 
+func getPage(link string) (io.ReadCloser, error) {
+
+	response, err := http.Get(link)
+	if err != nil {
+		return nil, fmt.Errorf("can not download the URL %s: %s", link, err)
+	}
+	
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("receive an HTTP error %s: %s", link, response.Status)
+	}
+	return response.Body, nil
+}
+
 func getFile(parsedURL *url.URL) (*os.File, error) {
 	dirPath := "downloaded_pages/" + parsedURL.Host
 	if len(parsedURL.Path) > 1 {
@@ -86,7 +94,6 @@ func getFile(parsedURL *url.URL) (*os.File, error) {
 	}
 	filePath := dirPath + ".html"
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		fmt.Printf("Create the new file %s\n", filePath)
 		err = os.MkdirAll(dirPath, 0755)
 		if err != nil {
 			return nil, fmt.Errorf("can not create the directory: %s", dirPath)
