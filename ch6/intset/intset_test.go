@@ -34,6 +34,11 @@ func TestExampleOne(t *testing.T) {
 	if x.Len() != 4 {
 		t.Errorf("Invalid length: expect: %v, got: %v", 4, x.Len())
 	}
+	x.Remove(9)
+	if x.Has(9){
+		t.Errorf("Got removed bit: %v", 9)
+	}
+	fmt.Println(x.String())
 }
 
 func TestExampleTwo(t *testing.T) {
