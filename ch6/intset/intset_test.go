@@ -31,6 +31,9 @@ func TestExampleOne(t *testing.T) {
 	// {9 42}
 	// {1 9 42 144}
 	// true false
+	if x.Len() != 4 {
+		t.Errorf("Invalid length: expect: %v, got: %v", 4, x.Len())
+	}
 }
 
 func TestExampleTwo(t *testing.T) {

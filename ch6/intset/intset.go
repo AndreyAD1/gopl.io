@@ -71,3 +71,18 @@ func (s *IntSet) String() string {
 }
 
 //!-string
+
+func (s *IntSet) Len() int {
+	var setBitsNumber int
+	for _, word := range s.words {
+		if word == 0 {
+			continue
+		}
+		for bitIndex := 0; bitIndex < 64; bitIndex++ {
+			if word&(1<<uint8(bitIndex)) != 0 {
+				setBitsNumber++
+			}
+		}
+	}
+	return setBitsNumber
+}
