@@ -3,9 +3,12 @@
 
 package intset
 
-import "fmt"
+import (
+	"fmt"
+	"testing"
+)
 
-func Example_one() {
+func TestExampleOne(t *testing.T) {
 	//!+main
 	var x, y IntSet
 	x.Add(1)
@@ -30,7 +33,7 @@ func Example_one() {
 	// true false
 }
 
-func Example_two() {
+func TestExampleTwo(t *testing.T) {
 	var x IntSet
 	x.Add(1)
 	x.Add(144)
