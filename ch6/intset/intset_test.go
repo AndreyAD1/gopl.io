@@ -62,5 +62,6 @@ func TestExampleTwo(t *testing.T) {
 	// {[4398046511618 0 65536]}
 	x.Clear()
 	fmt.Println(x)
+	y.AddAll(100, 200, 300)
 	fmt.Println(y)
 }
