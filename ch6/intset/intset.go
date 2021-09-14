@@ -45,6 +45,30 @@ func (s *IntSet) UnionWith(t *IntSet) {
 	}
 }
 
+func (s *IntSet) IntersectWith(otherSet *IntSet) {
+	for i, otherSetWord := range otherSet.words {
+		if i < len(s.words) {
+			s.words[i] &= otherSetWord
+		}
+	}
+}
+
+func (s *IntSet) SymmetricDifference(otherSet *IntSet) {
+	for i, otherSetWord := range otherSet.words {
+		if i < len(s.words) {
+			s.words[i] ^= otherSetWord
+		} else {
+			s.words = append(s.words, otherSetWord)
+		}
+	}
+}
+
+func (s *IntSet) DifferenceWith(otherSet *IntSet) {
+	initialSet := s.Copy()
+	s.SymmetricDifference(otherSet)
+	s.IntersectWith(initialSet)
+}
+
 //!-intset
 
 //!+string

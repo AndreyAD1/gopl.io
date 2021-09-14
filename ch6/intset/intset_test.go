@@ -64,4 +64,16 @@ func TestExampleTwo(t *testing.T) {
 	fmt.Println(x)
 	y.AddAll(100, 200, 300)
 	fmt.Println(y)
+	x.AddAll(100, 300, 400)
+	fmt.Println(x)
+	y.IntersectWith(&x)
+	fmt.Println(y)
+	y.AddAll(500, 600)
+	fmt.Println(x)
+	y.SymmetricDifference(&x)
+	fmt.Println(y)
+	
+	fmt.Println(x)
+	x.DifferenceWith(y)
+	fmt.Println(x)
 }
