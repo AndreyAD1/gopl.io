@@ -91,3 +91,15 @@ func (s *IntSet) Remove(x int) {
 	word, bit := x/64, uint(x%64)
 	s.words[word] &= ^(1<<bit)
 }
+
+func (s *IntSet) Clear() {
+	var empty []uint64
+	s.words = empty
+}
+
+func (s *IntSet) Copy() *IntSet {
+	var wordCopy []uint64
+	wordCopy = append(wordCopy, s.words...)
+	copy := IntSet{words: wordCopy}
+	return &copy
+}

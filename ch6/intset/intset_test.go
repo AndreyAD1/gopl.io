@@ -43,9 +43,11 @@ func TestExampleOne(t *testing.T) {
 
 func TestExampleTwo(t *testing.T) {
 	var x IntSet
+	fmt.Println(x)
 	x.Add(1)
 	x.Add(144)
 	x.Add(9)
+	y := x.Copy()
 	x.Add(42)
 
 	//!+note
@@ -58,4 +60,7 @@ func TestExampleTwo(t *testing.T) {
 	// {1 9 42 144}
 	// {1 9 42 144}
 	// {[4398046511618 0 65536]}
+	x.Clear()
+	fmt.Println(x)
+	fmt.Println(y)
 }
