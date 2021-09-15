@@ -46,6 +46,9 @@ func (s *IntSet) UnionWith(t *IntSet) {
 }
 
 func (s *IntSet) IntersectWith(otherSet *IntSet) {
+	if len(s.words) > len(otherSet.words) {
+		s.words = s.words[:len(otherSet.words) - 1]
+	}
 	for i, otherSetWord := range otherSet.words {
 		if i < len(s.words) {
 			s.words[i] &= otherSetWord

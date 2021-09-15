@@ -61,19 +61,43 @@ func TestExampleTwo(t *testing.T) {
 	// {1 9 42 144}
 	// {[4398046511618 0 65536]}
 	x.Clear()
-	fmt.Println(x)
+	fmt.Println(&x)
 	y.AddAll(100, 200, 300)
 	fmt.Println(y)
 	x.AddAll(100, 300, 400)
-	fmt.Println(x)
 	y.IntersectWith(&x)
-	fmt.Println(y)
+
 	y.AddAll(500, 600)
-	fmt.Println(x)
+	fmt.Printf("before sym dif y=%v\n", y)
+	fmt.Printf("before sym dif x=%v\n", &x)
 	y.SymmetricDifference(&x)
-	fmt.Println(y)
-	
-	fmt.Println(x)
+	fmt.Printf("after sym dif y=%v\n", y)
+	fmt.Printf("before diff: x=%v, y=%v\n", &x, y)
 	x.DifferenceWith(y)
-	fmt.Println(x)
+	fmt.Printf("after diff: x=%v, y=%v\n", &x, y)
+}
+
+func TestClear(t *testing.T) {
+	var set IntSet
+	set.AddAll(1, 2, 3, 4)
+	set.Clear()
+	if set.Len() != 0 {
+		t.Errorf("Set is not empty: %v", set.Len())
+	}
+}
+
+func TestIntSet_DifferenceWith(t *testing.T) {
+	var x, y IntSet
+	x.AddAll(1, 2, 3)
+	y.AddAll(3, 4, 5)
+	x.DifferenceWith(&y)
+	t.Logf("difference result: x=%v, y=%v\n", &x, &y)
+}
+
+func TestIntSet_IntersectWith(t *testing.T) {
+	var x, y IntSet
+	x.AddAll(100, 300, 500, 600)
+	y.AddAll(100, 300, 400)
+	x.IntersectWith(&y)
+	t.Logf("intersect result: x=%v, y=%v\n", &x, &y)
 }
