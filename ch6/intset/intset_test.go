@@ -35,7 +35,7 @@ func TestExampleOne(t *testing.T) {
 		t.Errorf("Invalid length: expect: %v, got: %v", 4, x.Len())
 	}
 	x.Remove(9)
-	if x.Has(9){
+	if x.Has(9) {
 		t.Errorf("Got removed bit: %v", 9)
 	}
 	fmt.Println(x.String())
@@ -105,4 +105,30 @@ func TestIntSet_SymmetricDifference(t *testing.T) {
 	y.AddAll(300, 400, 500, 600)
 	y.SymmetricDifference(&x)
 	t.Logf("symmetric diff result: %v\n", &y)
+}
+
+func TestIntSet_Elems(t *testing.T) {
+	var x IntSet
+	expectedElements := []int{1, 100, 300, 1000, 100000}
+	x.AddAll(expectedElements...)
+	elements := x.Elems()
+	t.Logf("elements: %v", elements)
+	if len(elements) != len(expectedElements) {
+		t.Errorf(
+			"Invalid element slice length. Got: %v. Expect: %v",
+			len(elements),
+			len(expectedElements),
+		)
+	}
+	for index, element := range elements {
+		expectedElement := expectedElements[index]
+		if element != expectedElement {
+			t.Errorf(
+				"unexpected element %v with index %v. Expect: %v\n",
+				element,
+				index,
+				expectedElement,
+			)
+		}
+	}
 }

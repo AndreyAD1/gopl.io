@@ -25,6 +25,21 @@ func (s *IntSet) Has(x int) bool {
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
+func (s *IntSet) Elems() []int {
+	var elements []int
+	for wordIndex, word := range s.words {
+		if word != 0 {
+			for bitIndex := 0; bitIndex < 65; bitIndex++ {
+				if word&(1<<bitIndex) != 0 {
+					element := wordIndex*64 + bitIndex
+					elements = append(elements, element)
+				}
+			}
+		}
+	}
+	return elements
+}
+
 // Add adds the non-negative value x to the set.
 func (s *IntSet) Add(x int) {
 	word, bit := x/64, uint(x%64)
@@ -47,7 +62,7 @@ func (s *IntSet) UnionWith(t *IntSet) {
 
 func (s *IntSet) IntersectWith(otherSet *IntSet) {
 	if len(s.words) > len(otherSet.words) {
-		s.words = s.words[:len(otherSet.words) - 1]
+		s.words = s.words[:len(otherSet.words)-1]
 	}
 	for i, otherSetWord := range otherSet.words {
 		if i < len(s.words) {
@@ -116,7 +131,7 @@ func (s *IntSet) Len() int {
 
 func (s *IntSet) Remove(x int) {
 	word, bit := x/64, uint(x%64)
-	s.words[word] &= ^(1<<bit)
+	s.words[word] &= ^(1 << bit)
 }
 
 func (s *IntSet) Clear() {
