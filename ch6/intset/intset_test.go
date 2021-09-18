@@ -68,11 +68,8 @@ func TestExampleTwo(t *testing.T) {
 	y.IntersectWith(&x)
 
 	y.AddAll(500, 600)
-	fmt.Printf("before sym dif y=%v\n", y)
-	fmt.Printf("before sym dif x=%v\n", &x)
 	y.SymmetricDifference(&x)
 	fmt.Printf("after sym dif y=%v\n", y)
-	fmt.Printf("before diff: x=%v, y=%v\n", &x, y)
 	x.DifferenceWith(y)
 	fmt.Printf("after diff: x=%v, y=%v\n", &x, y)
 }
@@ -100,4 +97,12 @@ func TestIntSet_IntersectWith(t *testing.T) {
 	y.AddAll(100, 300, 400)
 	x.IntersectWith(&y)
 	t.Logf("intersect result: x=%v, y=%v\n", &x, &y)
+}
+
+func TestIntSet_SymmetricDifference(t *testing.T) {
+	var x, y IntSet
+	x.AddAll(1, 100, 200, 300)
+	y.AddAll(300, 400, 500, 600)
+	y.SymmetricDifference(&x)
+	t.Logf("symmetric diff result: %v\n", &y)
 }
