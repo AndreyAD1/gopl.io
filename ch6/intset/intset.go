@@ -11,17 +11,19 @@ import (
 	"fmt"
 )
 
+const UintSize = 32 << (^uint(0) >> 63)
+
 //!+intset
 
 // An IntSet is a set of small non-negative integers.
 // Its zero value represents the empty set.
 type IntSet struct {
-	words []uint64
+	words []uint
 }
 
 // Has reports whether the set contains the non-negative value x.
 func (s *IntSet) Has(x int) bool {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/UintSize, uint(x%UintSize)
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
@@ -29,9 +31,9 @@ func (s *IntSet) Elems() []int {
 	var elements []int
 	for wordIndex, word := range s.words {
 		if word != 0 {
-			for bitIndex := 0; bitIndex < 65; bitIndex++ {
+			for bitIndex := 0; bitIndex < UintSize; bitIndex++ {
 				if word&(1<<bitIndex) != 0 {
-					element := wordIndex*64 + bitIndex
+					element := wordIndex*UintSize + bitIndex
 					elements = append(elements, element)
 				}
 			}
@@ -42,7 +44,7 @@ func (s *IntSet) Elems() []int {
 
 // Add adds the non-negative value x to the set.
 func (s *IntSet) Add(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/UintSize, uint(x%UintSize)
 	for word >= len(s.words) {
 		s.words = append(s.words, 0)
 	}
@@ -99,12 +101,12 @@ func (s *IntSet) String() string {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < UintSize; j++ {
 			if word&(1<<uint(j)) != 0 {
 				if buf.Len() > len("{") {
 					buf.WriteByte(' ')
 				}
-				fmt.Fprintf(&buf, "%d", 64*i+j)
+				fmt.Fprintf(&buf, "%d", UintSize*i+j)
 			}
 		}
 	}
@@ -120,7 +122,7 @@ func (s *IntSet) Len() int {
 		if word == 0 {
 			continue
 		}
-		for bitIndex := 0; bitIndex < 64; bitIndex++ {
+		for bitIndex := 0; bitIndex < UintSize; bitIndex++ {
 			if word&(1<<uint8(bitIndex)) != 0 {
 				setBitsNumber++
 			}
@@ -130,17 +132,17 @@ func (s *IntSet) Len() int {
 }
 
 func (s *IntSet) Remove(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/UintSize, uint(x%UintSize)
 	s.words[word] &= ^(1 << bit)
 }
 
 func (s *IntSet) Clear() {
-	var empty []uint64
+	var empty []uint
 	s.words = empty
 }
 
 func (s *IntSet) Copy() *IntSet {
-	var wordCopy []uint64
+	var wordCopy []uint
 	wordCopy = append(wordCopy, s.words...)
 	copy := IntSet{words: wordCopy}
 	return &copy
