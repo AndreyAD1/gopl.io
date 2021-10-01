@@ -12,23 +12,60 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"unicode/utf8"
 
 	"golang.org/x/net/html"
 )
 
-func main() {
-	for _, url := range os.Args[1:] {
-		resp, err := http.Get(url)	
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
-		err = outline(resp.Body)
-		if err != nil {
-			fmt.Println(err)
-		}
-		resp.Body.Close()
+type StringReader string
+
+func (s StringReader) Read(p []byte) (int, error) {
+	if len(s) == 0 {
+		return 0, io.EOF
 	}
+	
+	readByteNumber := 0
+	for {
+		run, runeSize := utf8.DecodeRuneInString(string(s))
+		if run == utf8.RuneError {
+			return readByteNumber, nil
+		}
+		readByteNumber += runeSize
+		if len(p) < readByteNumber {
+			return readByteNumber - runeSize, nil
+		}
+		copy(p[readByteNumber - runeSize:], s[:runeSize])
+		s = s[runeSize:]
+	}
+}
+
+func main() {
+	commandError := "The script requires either 'url' or 'string' command"
+	if len(os.Args) < 2 {
+		fmt.Println(commandError)
+	}
+	switch os.Args[1] {
+		case "url":
+			for _, url := range os.Args[2:] {
+				resp, err := http.Get(url)	
+				if err != nil {
+					fmt.Println(err)
+					break
+				}
+				err = outline(resp.Body)
+				if err != nil {
+					fmt.Println(err)
+				}
+				resp.Body.Close()
+			}
+		case "string":
+			stringReader := StringReader(os.Args[2])
+			err := outline(stringReader)
+			if err != nil {
+				fmt.Println(err)
+			}
+	}
+
 }
 
 func outline(responseBody io.Reader) error {
