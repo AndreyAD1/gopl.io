@@ -11,13 +11,14 @@ type LimitedReader struct {
 	readLimit int64
 }
 
-func (l LimitedReader) Read(p []byte) (int, error) {
+func (l *LimitedReader) Read(p []byte) (int, error) {
 	if l.readLimit == 0 {
 		return 0, io.EOF
 	}
 
 	if l.readLimit < int64(len(p)) {
 		readByteNumber, _ := l.reader.Read(p[:l.readLimit])
+		l.readLimit -= int64(readByteNumber)
 		return readByteNumber, io.EOF
 	} else {
 		readByteNumber, err := l.reader.Read(p)
@@ -26,7 +27,7 @@ func (l LimitedReader) Read(p []byte) (int, error) {
 	}
 }
 
-func LimitReader(r io.Reader, limit int64) io.Reader {
+func LimitReader(r io.Reader, limit int64) LimitedReader {
 	return LimitedReader{r, limit}
 }
 
