@@ -9,10 +9,32 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
 )
+
+var htmlTableTemplate = template.Must(template.New("htmlTable").Parse(`
+<h1>Shop Items</h1>
+<table>
+<tr style='text-align: left'>
+  <th>Item</th>
+  <th>Price</th>
+</tr>
+{{range .}}
+<tr>
+  <td>{{.Item}}</a></td>
+  <td>{{.Price}}</td>
+</tr>
+{{end}}
+</table>
+`))
+
+type ItemWithPrice struct {
+	Item string
+	Price dollars
+}
 
 //!+main
 
@@ -33,8 +55,13 @@ func (d dollars) String() string { return fmt.Sprintf("$%.2f", d) }
 type database map[string]dollars
 
 func (db database) list(w http.ResponseWriter, req *http.Request) {
+	var items []ItemWithPrice
 	for item, price := range db {
-		fmt.Fprintf(w, "%s: %s\n", item, price)
+		items = append(items, ItemWithPrice{item, price})
+		// fmt.Fprintf(w, "%s: %s\n", item, price)
+	}
+	if err := htmlTableTemplate.Execute(w, items); err != nil {
+		log.Fatal(err)
 	}
 }
 
