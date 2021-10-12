@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 //!+main
@@ -19,6 +20,7 @@ func main() {
 	db := database{"shoes": 50, "socks": 5}
 	http.HandleFunc("/list", db.list)
 	http.HandleFunc("/price", db.price)
+	http.HandleFunc("/update", db.update)
 	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 
@@ -44,4 +46,27 @@ func (db database) price(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNotFound) // 404
 		fmt.Fprintf(w, "no such item: %q\n", item)
 	}
+}
+
+func (db database) update(w http.ResponseWriter, req *http.Request) {
+	price := req.URL.Query().Get("price")
+	if price == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "'price' is required query argument")
+		return
+	}
+	uintPrice, err := strconv.ParseUint(price, 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "'price' should be a positive integer")
+		return
+	}
+	itemName := req.URL.Query().Get("item")
+	if itemName == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, "'itemName' is required query argument")
+		return
+	}
+	db[itemName] = dollars(uintPrice)
+	fmt.Fprintf(w, "%s: %s\n", itemName, db[itemName])
 }
