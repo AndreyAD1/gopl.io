@@ -40,6 +40,7 @@ func TestEval(t *testing.T) {
 			t.Error(err) // parse error
 			continue
 		}
+		fmt.Println("Parsed expression: ", expr)
 		got := fmt.Sprintf("%.6g", expr.Eval(test.env))
 		fmt.Printf("\t%v => %s\n", test.env, got)
 		if got != test.want {

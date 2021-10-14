@@ -31,6 +31,8 @@ var htmlTableTemplate = template.Must(template.New("htmlTable").Parse(`
 </table>
 `))
 
+type Errno uintptr
+
 type ItemWithPrice struct {
 	Item string
 	Price dollars
