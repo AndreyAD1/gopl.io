@@ -11,6 +11,59 @@ import (
 	"gopl.io/ch7/eval"
 )
 
+func getVariableList() ([]string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	variableString, err := reader.ReadString('\n')
+	if err == io.EOF {
+		return nil, fmt.Errorf("no variable values")
+	}
+	if err != nil {
+		return nil, err
+	}
+	variableString = strings.Replace(variableString, "\n", "", -1)
+	variableList := strings.Split(variableString, ",")
+	return variableList, nil
+}
+
+func getExpressionEnvironment(
+	variableList []string,
+	vars map[eval.Var]bool,
+	varDescription string,
+) (map[eval.Var]float64, error) {
+	expressionEnvironment := make(map[eval.Var]float64)
+	for _, variableString := range variableList {
+		variableStringItems := strings.Split(variableString, "=")
+		if len(variableStringItems) != 2 {
+			return nil, fmt.Errorf("invalid input: %s", variableString)
+		}
+		variableName := variableStringItems[0]
+		if _, ok := vars[eval.Var(variableName)]; !ok {
+			err := fmt.Errorf("unexpected variable name: %s", variableString)
+			return nil, err
+		}
+		if _, ok := expressionEnvironment[eval.Var(variableName)]; ok {
+			return nil, fmt.Errorf("repeated variable name: %v", variableName)
+		}
+		variableValue, err := strconv.ParseFloat(variableStringItems[1], 64)
+		if err != nil {
+			err := fmt.Errorf(
+				"unexpected variable value: %v",
+				variableStringItems[1],
+			)
+			return nil, err
+		}
+		expressionEnvironment[eval.Var(variableName)] = variableValue
+	}
+	if len(expressionEnvironment) != len(vars) {
+		err := fmt.Errorf(
+			"not enough variable values: expect: %s",
+			varDescription,
+		)
+		return nil, err
+	}
+	return expressionEnvironment, nil
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		fmt.Println("An expression is required script argument")
@@ -31,7 +84,7 @@ func main() {
 	varDescription := ""
 	i := 0
 	for v := range vars {
-		if i == len(vars) - 1 {
+		if i == len(vars)-1 {
 			varDescription += string(v)
 			break
 		}
@@ -40,37 +93,20 @@ func main() {
 	}
 	fmt.Println("Enter the variable values. Variable names: ", varDescription)
 	fmt.Println("Expected input format: 'x=1;y=2;...'")
-	reader := bufio.NewReader(os.Stdin)
-	expressionEnvironment := make(map[eval.Var]float64)
-	variableString, err := reader.ReadString('\n')
-	if err == io.EOF {
-		fmt.Println("No variable values")
-	}
+	variableList, err := getVariableList()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	variableString = strings.Replace(variableString, "\n", "", -1)
-	variableList := strings.Split(variableString, ",")
-	for _, variableString := range variableList {
-		variableStringItems := strings.Split(variableString, "=")
-		if len(variableStringItems) != 2 {
-			fmt.Println("Invalid input: ", variableString)
-			return
-		}
-		variableName := variableStringItems[0]
-		if _, ok := vars[eval.Var(variableName)]; !ok {
-			fmt.Println("Unexpected variable name: ", variableString)
-			return
-		}
-		variableValue, err := strconv.ParseFloat(variableStringItems[1], 64)
-		if err != nil {
-			fmt.Println("Unexpected variable value: ", variableStringItems[1])
-			return
-		}
-		expressionEnvironment[eval.Var(variableName)] = variableValue
+	expressionEnvironment, err := getExpressionEnvironment(
+		variableList,
+		vars,
+		varDescription,
+	)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-	// variableValues := map[eval.Var]float64 {"a": 2, "b": 1, "c": 3}
 	calculatedResult := expr.Eval(eval.Env(expressionEnvironment))
 	fmt.Println("The expression result is: ", calculatedResult)
 }
