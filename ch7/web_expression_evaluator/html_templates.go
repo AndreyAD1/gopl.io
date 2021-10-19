@@ -7,8 +7,13 @@ var MainPage = `<!DOCTYPE html>
 </head>
 <body>
 
-<h1>This is a Heading</h1>
-<p>This is a paragraph.</p>
+<h1>Web Calculator</h1>
+<h2>Enter an Expression</h2>
+<form action="/calculate">
+<label for="expression">Math expression:</label><br>
+<input type="text" id="expression" name="expression"><br>
+<input type="submit" value="Submit">
+</form> 
 
 </body>
 </html>`

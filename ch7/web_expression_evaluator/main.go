@@ -17,7 +17,15 @@ func getMainPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getExpressionResult(w http.ResponseWriter, r *http.Request) {}
+func getExpressionResult(w http.ResponseWriter, r *http.Request) {
+	log.Printf("Receive the request: %s %s", r.URL, r.Method)
+	w.Header().Set("Content-Type", "text/plain")
+	_, err := fmt.Fprint(w, "WAT?")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, ErrorPage)
+	}
+}
 
 func main() {
 	http.HandleFunc("/", getMainPage)
