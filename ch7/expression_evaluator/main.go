@@ -91,6 +91,11 @@ func main() {
 		varDescription += string(v) + ","
 		i++
 	}
+	if len(vars) == 0 {
+		calculatedResult := expr.Eval(eval.Env(nil))
+		fmt.Println("The expression result is: ", calculatedResult)
+		return
+	}
 	fmt.Println("Enter the variable values. Variable names: ", varDescription)
 	fmt.Println("Expected input format: 'x=1;y=2;...'")
 	variableList, err := getVariableList()
