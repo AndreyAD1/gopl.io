@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"gopl.io/ch7/eval"
 )
 
 type resultStruct struct {
@@ -31,14 +33,22 @@ func getExpressionResult(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		err := ResultPageTemplate.Execute(w, result)
 		if err != nil {
-			log.Printf("Can not generate no expresion response: %v", err)
+			log.Printf("Can not generate an error expression response: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprint(w, ErrorPage)
 		}
 		return
 	}
-	_, err := fmt.Fprint(w, "WAT?")
+	parsedExpression, err := eval.Parse(expression)
 	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	calculatedResult := parsedExpression.Eval(eval.Env(nil))
+	result := resultStruct{expression, calculatedResult}
+	err = ResultPageTemplate.Execute(w, result)
+	if err != nil {
+		log.Printf("Can not generate an expression response: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprint(w, ErrorPage)
 	}
