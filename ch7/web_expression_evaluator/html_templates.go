@@ -1,5 +1,7 @@
 package main
 
+import "html/template"
+
 var MainPage = `<!DOCTYPE html>
 <html>
 <head>
@@ -17,6 +19,22 @@ var MainPage = `<!DOCTYPE html>
 
 </body>
 </html>`
+
+var ResultPageTemplate = template.Must(template.New("ResultPage").Parse(`
+<!DOCTYPE html>
+<html>
+<head>
+<title>Web Calculator</title>
+</head>
+<body>
+
+<h1>Web Calculator</h1>
+<h2>Expression Result</h2>
+<p>Expression: {{.Expression}}</p>
+<p>Result: {{.Result}}</p>
+
+</body>
+</html>`))
 
 var ErrorPage = `
 <!DOCTYPE html>
