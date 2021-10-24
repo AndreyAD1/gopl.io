@@ -9,15 +9,36 @@ package main
 
 import (
 	"encoding/xml"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 )
 
+type XMLPath []string
+
+var inputPath XMLPath
+
+func (p *XMLPath) String() string {
+	return fmt.Sprint(*p)
+}
+
+func (p *XMLPath) Set(value string) error {
+	if len(*p) >0 {
+		return errors.New("path flag gas been already set")
+	}
+	_ = append(*p, strings.Split(value, " ")...)
+	return nil
+}
+
 func main() {
+	flag.Var(&inputPath, "path", "A target path. Example: 'div div h2'")
+	flag.Parse()
 	dec := xml.NewDecoder(os.Stdin)
-	var stack []string // stack of element names
+	var nameStack []string // stack of element names
+	var startElementStack []xml.StartElement
 	for {
 		tok, err := dec.Token()
 		if err == io.EOF {
@@ -28,12 +49,27 @@ func main() {
 		}
 		switch tok := tok.(type) {
 		case xml.StartElement:
-			stack = append(stack, tok.Name.Local) // push
+			nameStack = append(nameStack, tok.Name.Local) // push
+			startElementStack = append(startElementStack, tok)
 		case xml.EndElement:
-			stack = stack[:len(stack)-1] // pop
+			nameStack = nameStack[:len(nameStack)-1] // pop
+			startElementStack = startElementStack[:len(startElementStack)-1]
 		case xml.CharData:
-			if containsAll(stack, os.Args[1:]) {
-				fmt.Printf("%s: %s\n", strings.Join(stack, " "), tok)
+			correctID := true
+			// if inputIDs != nil {
+			// 	correctID = false
+			// 	for _, attr := range startElementStack[len(startElementStack)-1].Attr {
+			// 		if attr.Name.Local == "id" && containsAll([]string{attr.Value}, inputIDs) {
+			// 			correctID = true
+			// 			break
+			// 		}
+			// 	}
+			// }
+			if !correctID {
+				continue
+			}
+			if containsAll(nameStack, inputPath) {
+				fmt.Printf("%s: %s\n", strings.Join(nameStack, " "), tok)
 			}
 		}
 	}
