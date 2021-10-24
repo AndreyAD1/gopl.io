@@ -20,6 +20,7 @@ import (
 type XMLPath []string
 
 var inputPath XMLPath
+var inputID string
 
 func (p *XMLPath) String() string {
 	return fmt.Sprint(*p)
@@ -33,9 +34,21 @@ func (p *XMLPath) Set(value string) error {
 	return nil
 }
 
+func verifyInput() error {
+	if inputPath == nil && inputID == "" {
+		errMsg := "the script awaits at least one argument: element path or ID"
+		return fmt.Errorf("error: no input arguments, %s", errMsg)
+	}
+	return nil
+}
+
 func main() {
 	flag.Var(&inputPath, "path", "A target path. Example: 'div div h2'")
 	flag.Parse()
+	if err := verifyInput(); err != nil {
+		fmt.Println(err)
+		return
+	}
 	dec := xml.NewDecoder(os.Stdin)
 	var nameStack []string // stack of element names
 	var startElementStack []xml.StartElement
