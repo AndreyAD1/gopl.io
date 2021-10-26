@@ -68,6 +68,9 @@ func main() {
 			nameStack = nameStack[:len(nameStack)-1] // pop
 			startElementStack = startElementStack[:len(startElementStack)-1]
 		case xml.CharData:
+			if len(startElementStack) == 0 {
+				continue
+			}
 			currentElement :=  startElementStack[len(startElementStack)-1]
 			if !ElementIDIsCorrect(inputIDs, currentElement) {
 				continue
