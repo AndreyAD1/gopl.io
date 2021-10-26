@@ -9,7 +9,6 @@ package main
 
 import (
 	"encoding/xml"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -17,25 +16,25 @@ import (
 	"strings"
 )
 
-type XMLPath []string
+type ArgumentList []string
 
-var inputPath XMLPath
-var inputID string
+var inputPath ArgumentList
+var inputIDs ArgumentList
 
-func (p *XMLPath) String() string {
+func (p *ArgumentList) String() string {
 	return fmt.Sprint(*p)
 }
 
-func (p *XMLPath) Set(value string) error {
+func (p *ArgumentList) Set(value string) error {
 	if len(*p) > 0 {
-		return errors.New("path flag gas been already set")
+		return fmt.Errorf("flag %s has been already set", *p)
 	}
 	*p = append(*p, strings.Split(value, " ")...)
 	return nil
 }
 
 func verifyInput() error {
-	if inputPath == nil && inputID == "" {
+	if inputPath == nil && inputIDs == nil {
 		errMsg := "the script awaits at least one argument: element path or ID"
 		return fmt.Errorf("error: no input arguments, %s", errMsg)
 	}
@@ -43,7 +42,8 @@ func verifyInput() error {
 }
 
 func main() {
-	flag.Var(&inputPath, "path", "A target path. Example: 'div div h2'")
+	flag.Var(&inputPath, "path", "A target path. Example: -path='div div h2'")
+	flag.Var(&inputIDs, "ids", "A targets` ids. Example: -id='id1 id2'")
 	flag.Parse()
 	if err := verifyInput(); err != nil {
 		fmt.Println(err)
@@ -68,17 +68,8 @@ func main() {
 			nameStack = nameStack[:len(nameStack)-1] // pop
 			startElementStack = startElementStack[:len(startElementStack)-1]
 		case xml.CharData:
-			correctID := true
-			// if inputIDs != nil {
-			// 	correctID = false
-			// 	for _, attr := range startElementStack[len(startElementStack)-1].Attr {
-			// 		if attr.Name.Local == "id" && containsAll([]string{attr.Value}, inputIDs) {
-			// 			correctID = true
-			// 			break
-			// 		}
-			// 	}
-			// }
-			if !correctID {
+			currentElement :=  startElementStack[len(startElementStack)-1]
+			if !ElementIDIsCorrect(inputIDs, currentElement) {
 				continue
 			}
 			if containsAll(nameStack, inputPath) {
@@ -86,6 +77,17 @@ func main() {
 			}
 		}
 	}
+}
+
+func ElementIDIsCorrect(IDSlice []string, element xml.StartElement) bool {
+	if inputIDs != nil {
+		for _, attr := range element.Attr {
+			if attr.Name.Local == "id" && containsAll(inputIDs, []string{attr.Value}) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // containsAll reports whether x contains the elements of y, in order.
