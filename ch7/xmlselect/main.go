@@ -27,10 +27,10 @@ func (p *XMLPath) String() string {
 }
 
 func (p *XMLPath) Set(value string) error {
-	if len(*p) >0 {
+	if len(*p) > 0 {
 		return errors.New("path flag gas been already set")
 	}
-	_ = append(*p, strings.Split(value, " ")...)
+	*p = append(*p, strings.Split(value, " ")...)
 	return nil
 }
 
