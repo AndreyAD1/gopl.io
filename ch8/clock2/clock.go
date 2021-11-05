@@ -7,9 +7,12 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -25,7 +28,14 @@ func handleConn(c net.Conn) {
 }
 
 func main() {
-	listener, err := net.Listen("tcp", "localhost:8000")
+	if len(os.Args) != 2 {
+		log.Fatal("ERROR. Miss the positional argument: a server port number")
+	}
+	serverPort, err := strconv.Atoi(os.Args[1])
+	if err != nil {
+		log.Fatalf("Invalid port number: %s", os.Args[1])
+	}
+	listener, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", serverPort))
 	if err != nil {
 		log.Fatal(err)
 	}
