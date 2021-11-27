@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -27,8 +28,10 @@ func main() {
 		done <- struct{}{} // signal the main goroutine
 	}()
 	mustCopy(conn, os.Stdin)
+	fmt.Println("close write")
 	tcpConn.CloseWrite()
 	<-done // wait for background goroutine to finish
+	fmt.Println("close read")
 	tcpConn.CloseRead()
 }
 

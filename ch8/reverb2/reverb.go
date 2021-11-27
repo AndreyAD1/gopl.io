@@ -12,10 +12,14 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 	"time"
 )
 
+var waitGroup sync.WaitGroup
+
 func echo(c net.Conn, shout string, delay time.Duration) {
+	defer waitGroup.Done()
 	fmt.Fprintln(c, "\t", strings.ToUpper(shout))
 	time.Sleep(delay)
 	fmt.Fprintln(c, "\t", shout)
@@ -25,12 +29,20 @@ func echo(c net.Conn, shout string, delay time.Duration) {
 
 //!+
 func handleConn(c net.Conn) {
-	input := bufio.NewScanner(c)
+	TCPConn := c.(*net.TCPConn)
+	input := bufio.NewScanner(TCPConn)
 	for input.Scan() {
-		go echo(c, input.Text(), 1*time.Second)
+		waitGroup.Add(1)
+		// fmt.Println("work group counter ", waitGroup)
+		go echo(TCPConn, input.Text(), 1*time.Second)
 	}
+	go func() {
+		fmt.Println("Run waiting goroutine")
+		waitGroup.Wait()
+		TCPConn.CloseWrite()
+	}()
 	// NOTE: ignoring potential errors from input.Err()
-	c.Close()
+	TCPConn.CloseRead()
 }
 
 //!-
