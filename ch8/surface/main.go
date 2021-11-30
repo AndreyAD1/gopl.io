@@ -18,7 +18,7 @@ import (
 
 const (
 	width, height = 600, 320            // canvas size in pixels
-	cells         = 100                 // number of grid cells
+	cells         = 1000                 // number of grid cells
 	xyrange       = 30.0                // axis ranges (-xyrange..+xyrange)
 	xyscale       = width / 2 / xyrange // pixels per x or y unit
 	zscale        = height * 0.4        // pixels per z unit
@@ -27,6 +27,11 @@ const (
 
 var sin30, cos30 = math.Sin(angle), math.Cos(angle) // sin(30°), cos(30°)
 var waitGroup sync.WaitGroup
+
+type PolygonPerIndex struct {
+	Index int
+	Polygon string
+}
 
 func main() {
 	handler := func(
@@ -38,7 +43,7 @@ func main() {
 	log.Fatal(http.ListenAndServe("localhost:8000", nil))
 }
 
-func getPolygon(i, j int, polygonChannel chan<- string) {
+func getPolygon(i, j, cellIndex int, polygonChannel chan<- PolygonPerIndex) {
 	defer waitGroup.Done()
 	ax, ay, az := corner(i+1, j)
 	bx, by, bz := corner(i, j)
@@ -56,7 +61,7 @@ func getPolygon(i, j int, polygonChannel chan<- string) {
 		"<polygon fill=%q points='%g,%g %g,%g %g,%g %g,%g'/>\n",
 		polygon_color, ax, ay, bx, by, cx, cy, dx, dy)
 	
-	polygonChannel <- polygonString
+	polygonChannel <- PolygonPerIndex{cellIndex, polygonString}
 }
 
 func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
@@ -71,29 +76,35 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 		fmt.Println("Can not write to response.", err)
 		return
 	}
-	polygonChannel := make(chan string)
+	polygonChannel := make(chan PolygonPerIndex, cells * cells)
 
+	cellIndex := 0
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
 			waitGroup.Add(1)
-			go getPolygon(i, j, polygonChannel)
+			go getPolygon(i, j, cellIndex, polygonChannel)
+			cellIndex++
 		}
 	}
 	go func() {
 		waitGroup.Wait()
 		close(polygonChannel)
 	}()
+	var allPolygons [cells * cells]string
 	for {
-		polygonString, channelIsOpen := <-polygonChannel
+		polygon, channelIsOpen := <-polygonChannel
 		if !channelIsOpen {
 			break
 		}
-		_, err = io.WriteString(responseWriter, polygonString)
-	
+		allPolygons[polygon.Index] = polygon.Polygon
+	}
+	for _, polygon := range allPolygons {
+		_, err = io.WriteString(responseWriter, polygon)
+		
 		if err != nil {
 			fmt.Printf(
 				"Can not write the polygon %s. \nReason: %v", 
-				polygonString, 
+				polygon, 
 				err,
 			)
 		}
