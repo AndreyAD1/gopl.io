@@ -13,6 +13,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"sync"
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 )
 
 var sin30, cos30 = math.Sin(angle), math.Cos(angle) // sin(30°), cos(30°)
+var waitGroup sync.WaitGroup
 
 func main() {
 	handler := func(
@@ -33,7 +35,28 @@ func main() {
 		get_svg(responseWriter, request)
 	}
 	http.HandleFunc("/", handler)
-	log.Fatal(http.ListenAndServe("localhost:8100", nil))
+	log.Fatal(http.ListenAndServe("localhost:8000", nil))
+}
+
+func getPolygon(i, j int, polygonChannel chan<- string) {
+	defer waitGroup.Done()
+	ax, ay, az := corner(i+1, j)
+	bx, by, bz := corner(i, j)
+	cx, cy, cz := corner(i, j+1)
+	dx, dy, dz := corner(i+1, j+1)
+	z_coords := [...]float64{az, bz, cz, dz}
+	polygon_color := "#0000ff"
+	for _, z := range z_coords {
+		if z > 0 {
+			polygon_color = "#ff0000"
+			break
+		}
+	}
+	polygonString := fmt.Sprintf(
+		"<polygon fill=%q points='%g,%g %g,%g %g,%g %g,%g'/>\n",
+		polygon_color, ax, ay, bx, by, cx, cy, dx, dy)
+	
+	polygonChannel <- polygonString
 }
 
 func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
@@ -48,37 +71,36 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 		fmt.Println("Can not write to response.", err)
 		return
 	}
+	polygonChannel := make(chan string)
 
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
-			ax, ay, az := corner(i+1, j)
-			bx, by, bz := corner(i, j)
-			cx, cy, cz := corner(i, j+1)
-			dx, dy, dz := corner(i+1, j+1)
-			z_coords := [...]float64{az, bz, cz, dz}
-			polygon_color := "#0000ff"
-			for _, z := range z_coords {
-				if z > 0 {
-					polygon_color = "#ff0000"
-					break
-				}
-			}
-			polygonString := fmt.Sprintf(
-				"<polygon fill=%q points='%g,%g %g,%g %g,%g %g,%g'/>\n",
-				polygon_color, ax, ay, bx, by, cx, cy, dx, dy)
-			_, err = io.WriteString(responseWriter, polygonString)
-			
-			if err != nil {
-				fmt.Printf(
-					"Can not write the polygon %s. \nReason: %v", 
-					polygonString, 
-					err)
-			}
+			waitGroup.Add(1)
+			go getPolygon(i, j, polygonChannel)
+		}
+	}
+	go func() {
+		waitGroup.Wait()
+		close(polygonChannel)
+	}()
+	for {
+		polygonString, channelIsOpen := <-polygonChannel
+		if !channelIsOpen {
+			break
+		}
+		_, err = io.WriteString(responseWriter, polygonString)
+	
+		if err != nil {
+			fmt.Printf(
+				"Can not write the polygon %s. \nReason: %v", 
+				polygonString, 
+				err,
+			)
 		}
 	}
 	_, err = io.WriteString(responseWriter, "</svg>")
 	if err != nil {
-		fmt.Println("Can not write to the file.", err)
+		fmt.Println("Can not write the final tag '</svg>': ", err)
 	}
 }
 
