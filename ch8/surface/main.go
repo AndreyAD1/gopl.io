@@ -18,7 +18,7 @@ import (
 
 const (
 	width, height = 600, 320            // canvas size in pixels
-	cells         = 1000                 // number of grid cells
+	cells         = 700                 // number of grid cells
 	xyrange       = 30.0                // axis ranges (-xyrange..+xyrange)
 	xyscale       = width / 2 / xyrange // pixels per x or y unit
 	zscale        = height * 0.4        // pixels per z unit
@@ -76,6 +76,7 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 		fmt.Println("Can not write to response.", err)
 		return
 	}
+	log.Println("Start")
 	polygonChannel := make(chan PolygonPerIndex, cells * cells)
 
 	cellIndex := 0
@@ -113,6 +114,7 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		fmt.Println("Can not write the final tag '</svg>': ", err)
 	}
+	log.Println("Finish")
 }
 
 func corner(i, j int) (projectedX, projectedY, surfaceHeight float64) {
