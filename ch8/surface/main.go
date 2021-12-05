@@ -78,12 +78,15 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 	log.Println("Start")
 	polygonChannel := make(chan PolygonPerIndex, cells * cells)
+	countingSemaphor := make(chan struct{}, 20)
 
 	cellIndex := 0
 	for i := 0; i < cells; i++ {
 		for j := 0; j < cells; j++ {
+			countingSemaphor <- struct{}{}
 			waitGroup.Add(1)
 			go getPolygon(i, j, cellIndex, polygonChannel)
+			<- countingSemaphor
 			cellIndex++
 		}
 	}
