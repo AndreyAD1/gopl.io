@@ -36,25 +36,33 @@ func crawl(url string) []string {
 
 //!-sema
 
+type WorkList struct {
+	Urls []string
+	UrlLevel int
+}
+
 //!+
 func main() {
-	worklist := make(chan []string)
+	worklists := make(chan WorkList)
 	var n int // number of pending sends to worklist
 
 	// Start with the command-line arguments.
 	n++
-	go func() { worklist <- os.Args[1:] }()
+	go func() { worklists <- WorkList{os.Args[1:], 0} }()
 
 	// Crawl the web concurrently.
 	seen := make(map[string]bool)
 	for ; n > 0; n-- {
-		list := <-worklist
-		for _, link := range list {
+		worklist := <-worklists
+		if worklist.UrlLevel > 2 {
+			continue
+		}
+		for _, link := range worklist.Urls {
 			if !seen[link] {
 				seen[link] = true
 				n++
 				go func(link string) {
-					worklist <- crawl(link)
+					worklists <- WorkList{crawl(link), worklist.UrlLevel + 1}
 				}(link)
 			}
 		}
