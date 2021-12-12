@@ -5,11 +5,16 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"golang.org/x/net/html"
 )
 
 func Extract(initalURL string) ([]string, error) {
+	parsedURL, err := url.Parse(initalURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid link: %s", initalURL)
+	}
 	resp, err := http.Get(initalURL)
 	if err != nil {
 		return nil, err
@@ -25,6 +30,7 @@ func Extract(initalURL string) ([]string, error) {
 		return nil, fmt.Errorf("parsing %s as HTML: %v", initalURL, err)
 	}
 
+
 	var links []string
 	visitNode := func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "a" {
@@ -37,13 +43,13 @@ func Extract(initalURL string) ([]string, error) {
 					continue
 				}
 				links = append(links, link.String())
-				// localLink := getLocalLink(link)
-				// a.Val = localLink
+				localLink := getLocalLink(link, parsedURL)
+				a.Val = localLink
 			}
 		}
 	}
 	forEachNode(doc, visitNode, nil)
-	err = writePageToFile(doc, initalURL)
+	err = writePageToFile(doc, parsedURL)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +68,7 @@ func forEachNode(n *html.Node, pre, post func(n *html.Node)) {
 	}
 }
 
-func writePageToFile(page *html.Node, link string) error {
+func writePageToFile(page *html.Node, link *url.URL) error {
 	file, err := getFile(link)
 	if err != nil {
 		return err
@@ -76,11 +82,7 @@ func writePageToFile(page *html.Node, link string) error {
 	return nil
 }
 
-func getFile(link string) (*os.File, error) {
-	parsedURL, err := url.Parse(link)
-	if err != nil {
-		return nil, fmt.Errorf("invalid link: %s", link)
-	}
+func getFile(parsedURL *url.URL) (*os.File, error) {
 	dirPath := "mirrors/" + parsedURL.Host
 	if len(parsedURL.Path) > 1 {
 		dirPath += parsedURL.Path
@@ -107,5 +109,10 @@ func getFile(link string) (*os.File, error) {
 	return file, err
 }
 
-// func getLocalLink(link *url.URL, mirrorPath) string {
-// }
+func getLocalLink(link, currentURL *url.URL) string {
+	if link.Hostname() != currentURL.Hostname() {
+		return link.String()
+	}
+	linkPath := strings.Split(link.Path)
+	linkPath = append(linkPath, linkFile)
+}
