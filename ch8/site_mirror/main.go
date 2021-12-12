@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"gobook/training/ch5/links"
+	"gobook/training/ch8/site_mirror/links"
 )
 
 var tokens = make(chan struct{}, 20)
