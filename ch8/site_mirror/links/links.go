@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
+	"path/filepath"
 	"os"
-	"strings"
+	// "strings"
 
 	"golang.org/x/net/html"
 )
@@ -83,19 +85,16 @@ func writePageToFile(page *html.Node, link *url.URL) error {
 }
 
 func getFile(parsedURL *url.URL) (*os.File, error) {
-	dirPath := "mirrors/" + parsedURL.Host
-	if len(parsedURL.Path) > 1 {
-		dirPath += parsedURL.Path
-	}
-	filePath := dirPath + ".html"
+	dirPath := filepath.Join("mirrors", parsedURL.Host, path.Dir(parsedURL.Path))
+	filePath := filepath.Join(dirPath, path.Base(parsedURL.Path)) + ".html"
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		err = os.MkdirAll(dirPath, 0755)
 		if err != nil {
-			return nil, fmt.Errorf("can not create the directory: %s", dirPath)
+			return nil, fmt.Errorf("can not create the directory %s: %v", dirPath, err)
 		}
 		file, err := os.Create(filePath)
 		if err != nil {
-			err := fmt.Errorf("can not create the file: %s", filePath)
+			err := fmt.Errorf("can not create the file %s: %v", filePath, err)
 			return nil, err
 		}
 		return file, err
@@ -110,9 +109,10 @@ func getFile(parsedURL *url.URL) (*os.File, error) {
 }
 
 func getLocalLink(link, currentURL *url.URL) string {
-	if link.Hostname() != currentURL.Hostname() {
-		return link.String()
-	}
-	linkPath := strings.Split(link.Path)
-	linkPath = append(linkPath, linkFile)
+	return link.String()
+	// if link.Hostname() != currentURL.Hostname() {
+	// 	return link.String()
+	// }
+	// linkPath := strings.Split(link.Path)
+	// linkPath = append(linkPath, linkFile)
 }
