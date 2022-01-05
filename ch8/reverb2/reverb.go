@@ -42,7 +42,7 @@ func handleConn(c net.Conn) {
 	msgChannel := make(chan struct{})
 	clientAbortChannel := make(chan struct{})
 	go scanInput(input, msgChannel, clientAbortChannel)
-	connectionIsAlive := true
+loop:
 	for {
 		select {
 		case <-msgChannel:
@@ -50,13 +50,10 @@ func handleConn(c net.Conn) {
 			go echo(TCPConn, input.Text(), 1*time.Second)
 		case <-clientAbortChannel:
 			fmt.Println("The client have finished the conversation")
-			connectionIsAlive = false
+			break loop
 		case <-time.After(time.Second * 10):
 			fmt.Println("Receive no message in 10 seconds")
-			connectionIsAlive = false
-		}
-		if !connectionIsAlive {
-			break
+			break loop
 		}
 	}
 	go func() {
