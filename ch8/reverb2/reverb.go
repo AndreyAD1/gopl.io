@@ -27,21 +27,43 @@ func echo(c net.Conn, shout string, delay time.Duration) {
 	fmt.Fprintln(c, "\t", strings.ToLower(shout))
 }
 
+func scanInput(scanner *bufio.Scanner, msgChannel, finalChannel chan struct{}) {
+	for scanner.Scan() {
+		fmt.Println("Receive a message")
+		msgChannel <- struct{}{}
+	}
+	finalChannel <- struct{}{}
+}
+
 //!+
 func handleConn(c net.Conn) {
 	TCPConn := c.(*net.TCPConn)
 	input := bufio.NewScanner(TCPConn)
-	for input.Scan() {
-		waitGroup.Add(1)
-		// fmt.Println("work group counter ", waitGroup)
-		go echo(TCPConn, input.Text(), 1*time.Second)
+	msgChannel := make(chan struct{})
+	clientAbortChannel := make(chan struct{})
+	go scanInput(input, msgChannel, clientAbortChannel)
+	connectionIsAlive := true
+	for {
+		select {
+		case <-msgChannel:
+			waitGroup.Add(1)
+			go echo(TCPConn, input.Text(), 1*time.Second)
+		case <-clientAbortChannel:
+			fmt.Println("The client have finished the conversation")
+			connectionIsAlive = false
+		case <-time.After(time.Second * 10):
+			fmt.Println("Receive no message in 10 seconds")
+			connectionIsAlive = false
+		}
+		if !connectionIsAlive {
+			break
+		}
 	}
 	go func() {
 		fmt.Println("Run waiting goroutine")
 		waitGroup.Wait()
 		TCPConn.CloseWrite()
 	}()
-	// NOTE: ignoring potential errors from input.Err()
 	TCPConn.CloseRead()
 }
 
