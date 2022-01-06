@@ -11,6 +11,7 @@ import (
 )
 
 var vFlag = flag.Bool("v", false, "show verbose progress messages")
+var cFlag = flag.Bool("c", false, "show catalog sizes")
 
 type directoryInfo struct {
 	Path string
@@ -25,18 +26,26 @@ func main() {
 		roots = []string{"."}
 	}
 	fileSizes := make(chan int64)
-	dirSizes := make(chan directoryInfo)
-	subDirSizeChannel := make(chan int64)
+	var dirSizes chan directoryInfo
+	var subDirSizeChannel chan int64
+	if *cFlag {
+		dirSizes = make(chan directoryInfo)
+		subDirSizeChannel = make(chan int64)
+	}
 	var n sync.WaitGroup
 	for _, root := range roots {
 		n.Add(1)
 		go walkDir(root, &n, fileSizes, dirSizes, subDirSizeChannel)
 	}
 	go func() {
-		<-subDirSizeChannel
+		if subDirSizeChannel != nil {
+			<-subDirSizeChannel
+		}
 		n.Wait()
 		close(fileSizes)
-		close(dirSizes)
+		if dirSizes != nil {
+			close(dirSizes)
+		}
 	}()
 	var tick <-chan time.Time
 	if *vFlag {
@@ -81,19 +90,26 @@ func walkDir(
 	dirSizeReport chan<- int64,
 ) {
 	defer n.Done()
-	defer close(dirSizeReport)
+	if dirSizeReport != nil {
+		defer close(dirSizeReport)
+	}
 	var totalSize int64
 	var subDirSizeChannels []chan int64
 	dirEntities := dirents(dir)
 	if dirEntities == nil {
-		dirSizeReport <- 0
+		if dirSizeReport != nil {
+			dirSizeReport <- 0
+		}
 		return
 	}
 	for _, entry := range dirEntities {
 		if entry.IsDir() {
 			n.Add(1)
-			subDirSizeChannel := make(chan int64)
-			subDirSizeChannels = append(subDirSizeChannels, subDirSizeChannel)
+			var subDirSizeChannel chan int64
+			if dirSizeReport != nil {
+				subDirSizeChannel = make(chan int64)
+				subDirSizeChannels = append(subDirSizeChannels, subDirSizeChannel)
+			}
 			subdir := filepath.Join(dir, entry.Name())
 			go walkDir(subdir, n, fileSizes, dirSizes, subDirSizeChannel)
 		} else {
@@ -106,8 +122,10 @@ func walkDir(
 		subDirSize := <- channel
 		totalSize += subDirSize
 	}
-	dirSizeReport <- totalSize
-	dirSizes <- directoryInfo{dir, totalSize}
+	if dirSizeReport != nil {
+		dirSizeReport <- totalSize
+		dirSizes <- directoryInfo{dir, totalSize}
+	}
 }
 
 var sema = make(chan struct{}, 20)
