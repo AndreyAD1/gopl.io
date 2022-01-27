@@ -13,6 +13,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 //!+broadcaster
@@ -56,6 +57,17 @@ func broadcaster() {
 	}
 }
 
+func clientInput(
+	scanner *bufio.Scanner,
+	inputChannel chan<- string,
+	exitChannel chan<- struct{},
+) {
+	for scanner.Scan() {
+		inputChannel <- scanner.Text()
+	}
+	exitChannel <- struct{}{}
+}
+
 //!-broadcaster
 
 //!+handleConn
@@ -68,14 +80,28 @@ func handleConn(conn net.Conn) {
 	messages <- who + " has arrived"
 	entering <- ClientInfo{ch, who}
 
+	clientInputChannel := make(chan string)
+	clientExitChannel := make(chan struct{})
 	input := bufio.NewScanner(conn)
-	for input.Scan() {
-		messages <- who + ": " + input.Text()
+	go clientInput(input, clientInputChannel, clientExitChannel)
+	for {
+		connectionIsAlive := true
+		select {
+			case clientMessage := <-clientInputChannel:
+				messages <- who + ": " + clientMessage
+			case <-clientExitChannel:
+				leaving <- ch
+				messages <- who + " has left"
+				connectionIsAlive = false
+			case <-time.After(time.Minute * 5):
+				leaving <- ch
+				messages <- who + " kicked out for keeping silence"
+				connectionIsAlive = false
+		}
+		if !connectionIsAlive {
+			break
+		}
 	}
-	// NOTE: ignoring potential errors from input.Err()
-
-	leaving <- ch
-	messages <- who + " has left"
 	conn.Close()
 }
 
