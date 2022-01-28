@@ -74,16 +74,25 @@ func clientInput(
 func handleConn(conn net.Conn) {
 	ch := make(chan string) // outgoing client messages
 	go clientWriter(conn, ch)
-
-	who := conn.RemoteAddr().String()
-	ch <- "You are " + who
-	messages <- who + " has arrived"
-	entering <- ClientInfo{ch, who}
-
+	ch <- "Enter your name: "
+	input := bufio.NewScanner(conn)
 	clientInputChannel := make(chan string)
 	clientExitChannel := make(chan struct{})
-	input := bufio.NewScanner(conn)
 	go clientInput(input, clientInputChannel, clientExitChannel)
+	var who string
+	select {
+	case name := <-clientInputChannel:
+		who = name
+	case <-clientExitChannel:
+		conn.Close()
+		return
+	case <-time.After(time.Minute * 5):
+		conn.Close()
+		return
+	}
+
+	messages <- who + " has arrived"
+	entering <- ClientInfo{ch, who}
 	for {
 		connectionIsAlive := true
 		select {
