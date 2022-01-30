@@ -37,8 +37,17 @@ func broadcaster() {
 		case msg := <-messages:
 			// Broadcast incoming message to all
 			// clients' outgoing message channels.
-			for cli := range clients {
-				cli <- msg
+			for cli, clientName := range clients {
+				select {
+				case cli <- msg:
+				default:
+					errorMessage := fmt.Sprintf(
+						"Fail to send a message to client %s: %s",
+						clientName,
+						msg,
+					)
+					log.Println(errorMessage)
+				}
 			}
 
 		case clientInfo := <-entering:
@@ -72,7 +81,7 @@ func clientInput(
 
 //!+handleConn
 func handleConn(conn net.Conn) {
-	ch := make(chan string) // outgoing client messages
+	ch := make(chan string, 10) // outgoing client messages
 	go clientWriter(conn, ch)
 	ch <- "Enter your name: "
 	input := bufio.NewScanner(conn)
@@ -90,9 +99,8 @@ func handleConn(conn net.Conn) {
 		conn.Close()
 		return
 	}
-
-	messages <- who + " has arrived"
 	entering <- ClientInfo{ch, who}
+	messages <- who + " has arrived"
 	for {
 		connectionIsAlive := true
 		select {
