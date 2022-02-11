@@ -50,8 +50,12 @@ func (memo *Memo) get(key string, done <-chan struct{}, resultChannel chan<- *en
 		e = &entry{ready: make(chan struct{})}
 		memo.cache[key] = e
 		memo.mu.Unlock()
-
-		e.res.value, e.res.err = memo.f(key, done)
+		value, err := memo.f(key, done)
+		select {
+		case <-done:
+		default:
+			e.res.value, e.res.err = value, err
+		}
 
 		close(e.ready) // broadcast ready condition
 	} else {
