@@ -53,6 +53,9 @@ func (memo *Memo) get(key string, done <-chan struct{}, resultChannel chan<- *en
 		value, err := memo.f(key, done)
 		select {
 		case <-done:
+			memo.mu.Lock()
+			delete(memo.cache, key)
+			memo.mu.Unlock()
 		default:
 			e.res.value, e.res.err = value, err
 		}
