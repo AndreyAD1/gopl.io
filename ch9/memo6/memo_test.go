@@ -111,3 +111,42 @@ func TestSequentialWithCancellation(t *testing.T) {
 		})
 	}
 }
+
+func TestConcurrentWithCancellation(t *testing.T) {
+	m := New(httpGetBody)
+	for testCase := range incomingURLs() {
+		t.Run(testCase.url, func(t *testing.T) {
+			t.Parallel()
+			start := time.Now()
+			done := make(chan struct{})
+			if testCase.cancellation {
+				close(done)
+			}
+			value, err := m.Get(testCase.url, done)
+			if testCase.cancellation && err == nil {
+				t.Fatalf("expect error, got nil for URL %s", testCase.url)
+			}
+			if testCase.cancellation && err != nil {
+				expectedError := "receive a cancel signal"
+				if err.Error() != expectedError {
+					t.Fatalf(
+						"expected error message: %s, got: %s",
+						err.Error(),
+						expectedError,
+					)
+				}
+			}
+			if !testCase.cancellation && value == nil {
+				t.Fatalf("empty response body for URL %s", testCase.url)
+			}
+			if value != nil {
+				fmt.Printf(
+					"%s, %s, %d bytes\n",
+					testCase.url,
+					time.Since(start),
+					len(value.([]byte)),
+				)
+			}
+		})
+	}
+}
