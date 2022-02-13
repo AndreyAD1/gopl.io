@@ -1,7 +1,6 @@
 package memo6
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -32,12 +31,8 @@ type Memo struct {
 func (memo *Memo) Get(key string, done <-chan struct{}) (value interface{}, err error) {
 	resultChannel := make(chan *entry)
 	go memo.get(key, done, resultChannel)
-	select {
-	case result := <-resultChannel:
-		return result.res.value, result.res.err
-	case <-done:
-		return nil, fmt.Errorf("receive a cancel signal")
-	}
+	result := <-resultChannel
+	return result.res.value, result.res.err
 }
 
 func (memo *Memo) get(key string, done <-chan struct{}, resultChannel chan<- *entry) {
@@ -57,9 +52,8 @@ func (memo *Memo) get(key string, done <-chan struct{}, resultChannel chan<- *en
 			delete(memo.cache, key)
 			memo.mu.Unlock()
 		default:
-			e.res.value, e.res.err = value, err
 		}
-
+		e.res.value, e.res.err = value, err
 		close(e.ready) // broadcast ready condition
 	} else {
 		// This is a repeat request for this key.

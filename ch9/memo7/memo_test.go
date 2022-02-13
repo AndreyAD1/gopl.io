@@ -43,8 +43,8 @@ func TestCancellation(t *testing.T) {
 	if err.Error() != expectedError {
 		t.Errorf(
 			"expected error message: %s, got: %s",
-			err.Error(),
 			expectedError,
+			err.Error(),
 		)
 	}
 }

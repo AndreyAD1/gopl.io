@@ -37,14 +37,14 @@ func TestCancellation(t *testing.T) {
 	url := "https://golang.org"
 	_, err := m.Get(url, done)
 	if err == nil {
-		t.Error("expect error, got nil")
+		t.Fatal("expect error, got nil")
 	}
-	expectedError := "receive a cancel signal"
+	expectedError := `Get "https://golang.org": context canceled`
 	if err.Error() != expectedError {
 		t.Errorf(
 			"expected error message: %s, got: %s",
-			err.Error(),
 			expectedError,
+			err.Error(),
 		)
 	}
 }
@@ -52,20 +52,21 @@ func TestCancellation(t *testing.T) {
 type testCase struct {
 	url          string
 	cancellation bool
+	expectError  bool
 }
 
 func incomingURLs() <-chan testCase {
 	ch := make(chan testCase)
 	go func() {
 		for _, url := range []testCase{
-			{"https://golang.org", false},
-			{"https://godoc.org", true},
-			{"https://play.golang.org", true},
-			{"http://gopl.io", false},
-			{"https://golang.org", false},
-			{"https://godoc.org", true},
-			{"https://play.golang.org", false},
-			{"http://gopl.io", true},
+			{"https://golang.org", false, false},
+			{"https://godoc.org", true, true},
+			{"https://play.golang.org", true, true},
+			{"http://gopl.io", false, false},
+			{"https://golang.org", false, false},
+			{"https://godoc.org", true, true},
+			{"https://play.golang.org", false, false},
+			{"http://gopl.io", true, false},
 		} {
 			ch <- url
 		}
@@ -84,11 +85,14 @@ func TestSequentialWithCancellation(t *testing.T) {
 				close(done)
 			}
 			value, err := m.Get(testCase.url, done)
-			if testCase.cancellation && err == nil {
+			if testCase.expectError && err == nil {
 				t.Fatalf("expect error, got nil for URL %s", testCase.url)
 			}
-			if testCase.cancellation && err != nil {
-				expectedError := "receive a cancel signal"
+			if err != nil {
+				expectedError := fmt.Sprintf(
+					`Get "%s": context canceled`, 
+					testCase.url,
+				)
 				if err.Error() != expectedError {
 					t.Fatalf(
 						"expected error message: %s, got: %s",
@@ -127,7 +131,10 @@ func TestConcurrentWithCancellation(t *testing.T) {
 				t.Fatalf("expect error, got nil for URL %s", testCase.url)
 			}
 			if testCase.cancellation && err != nil {
-				expectedError := "receive a cancel signal"
+				expectedError := fmt.Sprintf(
+					`Get "%s": context canceled`, 
+					testCase.url,
+				)
 				if err.Error() != expectedError {
 					t.Fatalf(
 						"expected error message: %s, got: %s",
