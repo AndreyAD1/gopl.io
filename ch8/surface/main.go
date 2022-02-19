@@ -14,6 +14,7 @@ import (
 	"math"
 	"net/http"
 	"sync"
+	"time"
 )
 
 const (
@@ -77,6 +78,7 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Println("Start")
+	start := time.Now()
 	polygonChannel := make(chan PolygonPerIndex, cells * cells)
 	countingSemaphor := make(chan struct{}, 20)
 
@@ -117,7 +119,9 @@ func get_svg(responseWriter http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		fmt.Println("Can not write the final tag '</svg>': ", err)
 	}
+	workDuration := time.Since(start)
 	log.Println("Finish")
+	log.Printf("The work duration is %s", workDuration)
 }
 
 func corner(i, j int) (projectedX, projectedY, surfaceHeight float64) {
